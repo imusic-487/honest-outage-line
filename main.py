@@ -19,7 +19,8 @@ LINE = (
 )
 
 OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/output/entry.txt")
-MAX_CHARS = 160
+# Kit limit is 1-159 characters, so the guard uses 159, not 160.
+MAX_CHARS = 159
 
 
 def main() -> int:
@@ -33,11 +34,18 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
+    if "\n" in text or "\r" in text:
+        print("error: entry must be a single line", file=sys.stderr)
+        return 1
     parent = os.path.dirname(OUTPUT_PATH)
     if parent:
         os.makedirs(parent, exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8", newline="") as f:
         f.write(text)
+    with open(OUTPUT_PATH, encoding="utf-8") as f:
+        if f.read() != text:
+            print("error: written entry does not match", file=sys.stderr)
+            return 1
     print(f"wrote {len(text)} chars to {OUTPUT_PATH}")
     print(text)
     return 0
